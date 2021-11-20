@@ -9,7 +9,7 @@ from pydantic import AnyUrl, SecretStr
 from typing import Optional, List
 import motor.motor_asyncio
 from dotenv import load_dotenv
-from models import URLModel, User
+from app.models import URLModel, User
 
 app = FastAPI()
 load_dotenv()
