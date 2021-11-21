@@ -135,12 +135,17 @@ async def shortenUrl(
 
 
 @app.get("/admin_board")
-async def admin(request: Request):
-    hit_data = []
-    async for document in uri["Url"].find({}):
-        hit_data.append(document)
+async def admin(request: Request, chart_type: str = Query(...)):
+    if chart_type == "hits":
+        hit_data = []
+        async for document in uri["Url"].find({}):
+            hit_data.append(document)
+    elif chart_type == "location":
+        hit_data = []
+        async for document in uri["Location"].find({}):
+            hit_data.append(document)
     return templates.TemplateResponse(
-        "dashboard-admin.html", {"request": request, "hits": hit_data}
+        "dashboard-admin.html", {"request": request, "hits": hit_data, "type": chart_type}
     )
 
 
@@ -286,7 +291,7 @@ async def login_validation(username: str = Form(...), password: str = Form(...))
         if password == enc.decrypt(data["password"].encode()).decode("utf-8"):
             if username == "admin":
                 return RedirectResponse(
-                    "/admin_board", status_code=status.HTTP_302_FOUND
+                    "/admin_board?chart_type=hits", status_code=status.HTTP_302_FOUND
                 )
             return RedirectResponse(
                 "/dashboard?user=" + username, status_code=status.HTTP_302_FOUND
@@ -348,19 +353,18 @@ async def register_validation(
 @app.get("/{url}")
 async def redirect_url(url: str):
     url_data = await uri["Url"].find_one({"short_url": url})
-    hostname = socket.gethostname()
-    ip_address = socket.gethostbyname(hostname)
-    url = f"https://freegeoip.app/json/{ip_address}"       # getting records from getting ip address
-    headers = {
-        'accept': "application/json",
-        'content-type': "application/json"
-        }
-    response = requests.request("GET", url, headers=headers)
-    country = json.loads(response.text)["country_name"]
-    data = await uri["Country"].find_one({"country": country})
-    if data:
-        await uri["Country"].update_one({"country": country}, {'$inc': {"hits": 1}})
-    else:
-        await uri["Country"].insert_one({"country": country, "hits": 1})
-    await uri["Url"].update_one({"short_url": url}, {"$inc": {"hits": 1}})
-    return RedirectResponse(url_data["long_url"])
+    if url_data:
+        url = f"https://ipinfo.io/json"       # getting records from getting ip address
+        headers = {
+            'accept': "application/json",
+            'content-type': "application/json"
+            }
+        response = requests.request("GET", url, headers=headers)
+        city = json.loads(response.text)["city"]
+        data = await uri["Location"].find_one({"city": city})
+        if data:
+            await uri["Location"].update_one({"city": city}, {'$inc': {"hits": 1}})
+        else:
+            await uri["Location"].insert_one({"city": city, "hits": 1})
+        await uri["Url"].update_one({"short_url": url}, {"$inc": {"hits": 1}})
+        return RedirectResponse(url_data["long_url"])

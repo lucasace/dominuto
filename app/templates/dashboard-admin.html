@@ -68,7 +68,7 @@
                             </a>
                         </h1>
                         <div class="topnav">
-                          <a href="#">GeoLocation Table</a>
+                          <a href="/admin_board?chart_type=location">GeoLocation Table</a>
                           <a href="/">Logout</a>
                         </div>
                     </div>
@@ -131,7 +131,12 @@
       {%for hit in hits if count!=0%}
         count-=1;
         data.push({{hit["hits"]}})
-        labels.push("https://dominuto.herokuapp.com/{{hit['short_url']}}")
+        {%if type == "hits"%}
+          labels.push("https://dominuto.herokuapp.com/{{hit['short_url']}}")
+        {%  elif type=="location"%}
+          labels.push("{{hit['city']}}")
+        {%endif%}
+
       {%endfor%}
       const ctx = document.getElementById('hitchart').getContext('2d');
       const myChart = new Chart(
