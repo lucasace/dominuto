@@ -42,7 +42,7 @@ def home(request: Request, url: Optional[str] = Query(None)):
 @app.post("/")
 async def shortenUrl(
     request: Request,
-    url: AnyUrl = Form(...),
+    url: str = Form(...),
     user: Optional[str] = Query(None),
     ret: Optional[str] = Query(None),
 ):
@@ -110,7 +110,7 @@ async def shortenUrl(
                 "/?url=" + hash_b62(counter["value"]).rjust(7, "0"),
                 status_code=status.HTTP_302_FOUND,
             )
-    except requests.ConnectionError as exception:
+    except (requests.ConnectionError, requests.exceptions.InvalidURL) as exception:
         if ret == "dashboard":
             return RedirectResponse(
                 "/dashboard?user=" + user + "&url=Invalid Url",
@@ -118,7 +118,7 @@ async def shortenUrl(
             )
         else:
             return RedirectResponse(
-                "/?url=Invalid Url", status_code=status.HTTP_302_FOUND
+                "/#shorten?url=Invalid Url", status_code=status.HTTP_302_FOUND
             )
 
 @app.get("/admin_board")
@@ -143,6 +143,22 @@ def dashboard(
         "dashboard.html", {"request": request, "user": user, "url": url}
     )
 
+@app.get("/manage_url")
+async def manage(request: Request, user: str=Query(...)):
+    data = await uri["Users"].find_one({'username': user})
+    return templates.TemplateResponse(
+        "dashboard-manage.html", {"request": request, "user": user, "data": data["urls"]}
+    )
+
+@app.post("/manage")
+async def manage_post(user: str = Query(...), url: str = Query(...), short: str=Query(...)):
+    await uri["Users"].update_one({'username': user, "urls.url": url}, {'$pullAll': {'urls.$.aliases': [short]}})
+    data = await uri["Users"].find_one({'username': user, "urls.url": url})
+    for i in data['urls']:
+        if i["url"]==url:
+            if len(i["aliases"]) <1:
+                await uri["Users"].update_one({'username': user}, {'$pullAll': {'urls' :[{'url':url, 'aliases': []}]}})
+    return RedirectResponse("/manage_url?user="+user, status_code=status.HTTP_302_FOUND)
 
 @app.get("/custom_url")
 def custom_url(
@@ -170,6 +186,14 @@ async def custom(user: str = Query(...), url: str = Form(...), custom_url: str =
             "/custom_url?user="
             + user
             + "&error=Custom url must be between 7 and  10 characters",
+            status_code=status.HTTP_302_FOUND,
+        )
+    data = await uri["Url"].find_one({'short_url': custom_url})
+    if data:
+        return RedirectResponse(
+            "/custom_url?user="
+            + user
+            + "&error=Url Already used! Kindly choose a different one",
             status_code=status.HTTP_302_FOUND,
         )
     try:

@@ -68,8 +68,8 @@
                             </a>
                         </h1>
                         <div class="topnav">
-                          <a href="#">Hits Table</a>
                           <a href="#">GeoLocation Table</a>
+                          <a href="/">Logout</a>
                         </div>
                     </div>
                 </div>
@@ -187,9 +187,18 @@
                 tension: 0.1
               }
             ]
+          },
+          options:{
+            scales:{
+              xAxes: [{
+                ticks: {
+                  display:false
+                } //this will remove all the x-axis grid lines
+              }]
+            }
           }
-        }
-      )
+      }
+    )
     </script>
     <script src="{{ url_for('static', path='dist/js/main.min.js')}}"></script>
 </body>

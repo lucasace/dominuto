@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Dominuto</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', path='vendor/bootstrap/css/bootstrap.min.css')}}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', path='fonts/font-awesome-4.7.0/css/font-awesome.min.css')}}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', path='vendor/animate/animate.css')}}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', path='vendor/select2/select2.min.css')}}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', path='vendor/perfect-scrollbar/perfect-scrollbar.css')}}">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', path='css/util.css')}}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', path='css/main.css')}}">
+  <style>
+    .topnav {
+          background-color: #333;
+          overflow: hidden;
+        }
+
+        /* Style the links inside the navigation bar */
+        .topnav a {
+          float: left;
+          color: #f2f2f2;
+          text-align: center;
+          padding: 14px 16px;
+          text-decoration: none;
+          font-size: 17px;
+        }
+
+        /* Change the color of links on hover */
+        .topnav a:hover {
+          background-color: #ddd;
+          color: black;
+        }
+
+        /* Add a color to the active/current link */
+        .topnav a.active {
+          background-color: #04AA6D;
+          color: white;
+        }
+  </style>
+<!--===============================================================================================-->
+</head>
+<body>
+  <div class="topnav">
+    <a href="/custom_url?user={{user}}">Custom URL</a>
+    <a href="/dashboard?user={{user}}">Shorten Urls</a>
+    <a href="/">Logout</a>
+  </div>
+	<div class="limiter">
+		<div class="container-table100">
+			<div class="wrap-table100">
+				<div class="table100 ver1 m-b-110">
+					<div class="table100-head">
+						<table>
+							<thead>
+								<tr class="row100 head">
+									<th class="cell100 column1">Long url</th>
+									<th class="cell100 column2">short url</th>
+									<th class="cell100 column3">delete</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
+
+					<div class="table100-body js-pscroll">
+						<table>
+							<tbody>
+                {%for d in data%}
+                  {%for a in d["aliases"]%}
+                <tr class="row100 body">
+                      <td class="cell100 column1"><a href="{{d['url']}}">{{d["url"]}}</a></td>
+                      <td class="cell100 column2"><a href="https://dominuto.herokuapp.com/{{a}}">https://dominuto.herokuapp.com/{{a}}</a></td>
+                      <td class="cell100 column3">
+                        <form action="/manage?user={{user}}&url={{d['url']}}&short={{a}}" method="post">
+                          <input type="submit" class="btn btn-primary" value="Delete"/>
+                        </form>
+                      </td>
+								</tr>
+                {%endfor%}
+              {%endfor%}
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+
+					</div>
+				</div>
+			</div>
+
+
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', path='vendor/jquery/jquery-3.2.1.min.js')}}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', path='vendor/bootstrap/js/popper.js')}}"></script>
+	<script src="{{ url_for('static', path='vendor/bootstrap/js/bootstrap.min.js')}}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', path='vendor/select2/select2.min.js')}}"></script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', path='vendor/perfect-scrollbar/perfect-scrollbar.min.js')}}"></script>
+	<script>
+		$('.js-pscroll').each(function(){
+			var ps = new PerfectScrollbar(this);
+
+			$(window).on('resize', function(){
+				ps.update();
+			})
+		});
+
+
+	</script>
+<!--===============================================================================================-->
+	<script src="{{ url_for('static', path='js/main.js')}}"></script>
+
+</body>
+</html>
