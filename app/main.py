@@ -35,9 +35,10 @@ def hash_b62(b62_value: int):
 
 @app.get("/")
 def home(request: Request, url: Optional[str] = Query(None)):
+
+    text = ""
     if not url:
         url = ""
-        text = ""
     elif "Invalid" not in url:
         url = "https://dominuto.herokuapp.com/" + url
         text = "Your shortened url is "
@@ -119,7 +120,7 @@ async def shortenUrl(
                 "/?url=" + hash_b62(counter["value"]).rjust(7, "0"),
                 status_code=status.HTTP_302_FOUND,
             )
-    except (requests.ConnectionError, requests.exceptions.InvalidURL):
+    except (requests.ConnectionError, requests.exceptions.InvalidURL, requests.exceptions.InvalidSchema):
         if ret == "dashboard":
             return RedirectResponse(
                 "/dashboard?user=" + user + "&url=Invalid Url",
@@ -127,7 +128,7 @@ async def shortenUrl(
             )
         else:
             return RedirectResponse(
-                "/#shorten?url=Invalid Url", status_code=status.HTTP_302_FOUND
+                "/?url=Invalid Url", status_code=status.HTTP_302_FOUND
             )
 
 
@@ -135,7 +136,7 @@ async def shortenUrl(
 async def admin(request: Request):
     hit_data = []
     async for document in uri["Url"].find({}):
-        hit_data.append(document["hits"])
+        hit_data.append(document)
     return templates.TemplateResponse(
         "dashboard-admin.html", {"request": request, "hits": hit_data}
     )
@@ -147,9 +148,10 @@ def dashboard(
     user: str = Query(...),
     url: Optional[str] = Query(None),
 ):
+
+    text = ""
     if not url:
         url = ""
-        text = ""
     elif "Invalid" not in url:
         url = "https://dominuto.herokuapp.com/" + url
         text = "Your shoterned url is "
@@ -198,9 +200,9 @@ def custom_url(
 ):
     if not error:
         error = ""
+    text = ""
     if not url:
         url = ""
-        text = ""
     else:
         url = "https://dominuto.herokuapp.com/" + url
         text = "Your shortened url: "
@@ -214,7 +216,7 @@ def custom_url(
 async def custom(
     user: str = Query(...), url: str = Form(...), custom_url: str = Form(...)
 ):
-    if len(custom_url) > 10 and len(custom_url) < 7:
+    if len(custom_url) > 10 or len(custom_url) < 7:
         return RedirectResponse(
             "/custom_url?user="
             + user
@@ -259,7 +261,7 @@ async def custom(
             url="/custom_url?user=" + user + "&url=" + custom_url,
             status_code=status.HTTP_302_FOUND,
         )
-    except requests.ConnectionError as exception:
+    except (requests.ConnectionError, requests.exceptions.InvalidURL, requests.exceptions.InvalidSchema):
         return RedirectResponse(
             "/custom_url?user=" + user + "&error=Invalid Url",
             status_code=status.HTTP_302_FOUND,
