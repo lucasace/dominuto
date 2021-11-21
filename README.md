@@ -13,5 +13,5 @@ https://dominuto.herokuapp.com/
     ```
 3. ```bash
     uvicorn app.main:app --port=5000 --reload
-  ```
+    ```
 4. Visit http://localhost:5000
