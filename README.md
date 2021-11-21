@@ -5,8 +5,8 @@ https://dominuto.herokuapp.com/
 
 ## Local Development
 1. ```bash
-  pip3 install requirements.txt
-  ```
+    pip3 install requirements.txt
+    ```
 2. ```bash
     $MONGODB_URL=<Enter your db url here>
     $KEY=<Enter your Fernet key here>
