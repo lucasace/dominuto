@@ -1,31 +1,34 @@
-import requests
+from typing import Optional
 import os
-from fastapi.responses import JSONResponse, RedirectResponse
+import requests
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.encoders import jsonable_encoder
 from fastapi import FastAPI, Request, status, Form, Query
-from pydantic import AnyUrl, SecretStr
-from typing import Optional, List
 import motor.motor_asyncio
 from dotenv import load_dotenv
+from cryptography.fernet import Fernet
 from app.models import URLModel, User
+
+# pylint: disable=C0116, R1705, W0621
 
 app = FastAPI()
 load_dotenv()
 client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["MONGODB_URL"])
 uri = client.Dominuto
 urls = uri.get_collection("Url")
+enc = Fernet(os.environ["KEY"])
 
 templates = Jinja2Templates(directory="./app/templates")
 app.mount("/static", StaticFiles(directory="./app/static"), name="static")
 
 
 def hash_b62(b62_value: int):
-    s = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    hash_code = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     hash_str = ""
     while b62_value > 0:
-        hash_str = s[b62_value % 62] + hash_str
+        hash_str = hash_code[b62_value % 62] + hash_str
         b62_value = int(b62_value / 62)
     return hash_str
 
@@ -34,11 +37,13 @@ def hash_b62(b62_value: int):
 def home(request: Request, url: Optional[str] = Query(None)):
     if not url:
         url = ""
-        text=""
+        text = ""
     elif "Invalid" not in url:
         url = "https://dominuto.herokuapp.com/" + url
-        text="Your shortened url is "
-    return templates.TemplateResponse("index.html", {"request": request, "text": text, "url": url})
+        text = "Your shortened url is "
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "text": text, "url": url}
+    )
 
 
 @app.post("/")
@@ -77,11 +82,13 @@ async def shortenUrl(
     try:
         _ = requests.get(url)
         counter = await uri["Counter"].find_one()
-        id = counter = counter["_id"]
+        id = counter["_id"]
         await uri["Counter"].update_one({"_id": id}, {"$inc": {"value": 1}})
         counter = await uri["Counter"].find_one()
         new_data = jsonable_encoder(
-            URLModel(long_url=url, short_url=hash_b62(counter["value"]).rjust(7, "0"), hits=0)
+            URLModel(
+                long_url=url, short_url=hash_b62(counter["value"]).rjust(7, "0"), hits=0
+            )
         )
         await uri["Url"].insert_one(new_data)
         if ret == "dashboard":
@@ -112,7 +119,7 @@ async def shortenUrl(
                 "/?url=" + hash_b62(counter["value"]).rjust(7, "0"),
                 status_code=status.HTTP_302_FOUND,
             )
-    except (requests.ConnectionError, requests.exceptions.InvalidURL) as exception:
+    except (requests.ConnectionError, requests.exceptions.InvalidURL):
         if ret == "dashboard":
             return RedirectResponse(
                 "/dashboard?user=" + user + "&url=Invalid Url",
@@ -123,12 +130,15 @@ async def shortenUrl(
                 "/#shorten?url=Invalid Url", status_code=status.HTTP_302_FOUND
             )
 
+
 @app.get("/admin_board")
 async def admin(request: Request):
     hit_data = []
     async for document in uri["Url"].find({}):
         hit_data.append(document["hits"])
-    return templates.TemplateResponse("dashboard-admin.html", {"request": request, "hits": hit_data})
+    return templates.TemplateResponse(
+        "dashboard-admin.html", {"request": request, "hits": hit_data}
+    )
 
 
 @app.get("/dashboard")
@@ -149,22 +159,35 @@ def dashboard(
         "dashboard.html", {"request": request, "user": user, "text": text, "url": url}
     )
 
+
 @app.get("/manage_url")
-async def manage(request: Request, user: str=Query(...)):
-    data = await uri["Users"].find_one({'username': user})
+async def manage(request: Request, user: str = Query(...)):
+    data = await uri["Users"].find_one({"username": user})
     return templates.TemplateResponse(
-        "dashboard-manage.html", {"request": request, "user": user, "data": data["urls"]}
+        "dashboard-manage.html",
+        {"request": request, "user": user, "data": data["urls"]},
     )
 
+
 @app.post("/manage")
-async def manage_post(user: str = Query(...), url: str = Query(...), short: str=Query(...)):
-    await uri["Users"].update_one({'username': user, "urls.url": url}, {'$pullAll': {'urls.$.aliases': [short]}})
-    data = await uri["Users"].find_one({'username': user, "urls.url": url})
-    for i in data['urls']:
-        if i["url"]==url:
-            if len(i["aliases"]) <1:
-                await uri["Users"].update_one({'username': user}, {'$pullAll': {'urls' :[{'url':url, 'aliases': []}]}})
-    return RedirectResponse("/manage_url?user="+user, status_code=status.HTTP_302_FOUND)
+async def manage_post(
+    user: str = Query(...), url: str = Query(...), short: str = Query(...)
+):
+    await uri["Users"].update_one(
+        {"username": user, "urls.url": url}, {"$pullAll": {"urls.$.aliases": [short]}}
+    )
+    data = await uri["Users"].find_one({"username": user, "urls.url": url})
+    for i in data["urls"]:
+        if i["url"] == url:
+            if len(i["aliases"]) < 1:
+                await uri["Users"].update_one(
+                    {"username": user},
+                    {"$pullAll": {"urls": [{"url": url, "aliases": []}]}},
+                )
+    return RedirectResponse(
+        "/manage_url?user=" + user, status_code=status.HTTP_302_FOUND
+    )
+
 
 @app.get("/custom_url")
 def custom_url(
@@ -177,17 +200,20 @@ def custom_url(
         error = ""
     if not url:
         url = ""
+        text = ""
     else:
         url = "https://dominuto.herokuapp.com/" + url
-        text="Your shortened url: "
+        text = "Your shortened url: "
     return templates.TemplateResponse(
         "dashboard-custom.html",
-        {"request": request, "user": user, "url": url, 'text': text, "error": error},
+        {"request": request, "user": user, "url": url, "text": text, "error": error},
     )
 
 
 @app.post("/custom")
-async def custom(user: str = Query(...), url: str = Form(...), custom_url: str = Form(...)):
+async def custom(
+    user: str = Query(...), url: str = Form(...), custom_url: str = Form(...)
+):
     if len(custom_url) > 10 and len(custom_url) < 7:
         return RedirectResponse(
             "/custom_url?user="
@@ -195,7 +221,7 @@ async def custom(user: str = Query(...), url: str = Form(...), custom_url: str =
             + "&error=Custom url must be between 7 and  10 characters",
             status_code=status.HTTP_302_FOUND,
         )
-    data = await uri["Url"].find_one({'short_url': custom_url})
+    data = await uri["Url"].find_one({"short_url": custom_url})
     if data:
         return RedirectResponse(
             "/custom_url?user="
@@ -205,7 +231,9 @@ async def custom(user: str = Query(...), url: str = Form(...), custom_url: str =
         )
     try:
         _ = requests.get(url)
-        new_data = jsonable_encoder(URLModel(long_url=url, short_url=custom_url, hits=0))
+        new_data = jsonable_encoder(
+            URLModel(long_url=url, short_url=custom_url, hits=0)
+        )
         await uri["Url"].insert_one(new_data)
         data = await uri["Users"].find_one(
             {"username": user, "urls": {"$elemMatch": {"url": url}}}
@@ -249,13 +277,21 @@ def login(request: Request, error: Optional[str] = Query(None)):
 
 @app.post("/login")
 async def login_validation(username: str = Form(...), password: str = Form(...)):
-    data = await uri["Users"].find_one({"username": username, "password": password})
+    data = await uri["Users"].find_one({"username": username})
     if data:
-        if username=="admin":
-            return RedirectResponse("/admin_board", status_code=status.HTTP_302_FOUND)
-        return RedirectResponse(
-            "/dashboard?user=" + username, status_code=status.HTTP_302_FOUND
-        )
+        if password == enc.decrypt(data["password"].encode()).decode("utf-8"):
+            if username == "admin":
+                return RedirectResponse(
+                    "/admin_board", status_code=status.HTTP_302_FOUND
+                )
+            return RedirectResponse(
+                "/dashboard?user=" + username, status_code=status.HTTP_302_FOUND
+            )
+        else:
+            return RedirectResponse(
+                "/login?error=Invalid Username or Password",
+                status_code=status.HTTP_302_FOUND,
+            )
     else:
         return RedirectResponse(
             "/login?error=Invalid Username or Password",
@@ -292,7 +328,12 @@ async def register_validation(
             status_code=status.HTTP_302_FOUND,
         )
     data = jsonable_encoder(
-        User(email=email, username=username, password=password, urls=[])
+        User(
+            email=email,
+            username=username,
+            password=enc.encrypt(password.encode()),
+            urls=[],
+        )
     )
     await uri["Users"].insert_one(data)
     return RedirectResponse(
@@ -301,7 +342,7 @@ async def register_validation(
 
 
 @app.get("/{url}")
-async def redirectURL(url: str):
+async def redirect_url(url: str):
     url_data = await uri["Url"].find_one({"short_url": url})
-    await uri["Url"].update_one({"short_url": url}, {'$inc': {"hits": 1}})
+    await uri["Url"].update_one({"short_url": url}, {"$inc": {"hits": 1}})
     return RedirectResponse(url_data["long_url"])

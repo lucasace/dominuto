@@ -4,6 +4,7 @@ from typing import List, Dict, Optional
 from datetime import date
 import time
 
+
 class PyObjectId(ObjectId):
     @classmethod
     def __get_validators__(cls):
@@ -19,11 +20,13 @@ class PyObjectId(ObjectId):
     def __modify_schema__(cls, field_schema):
         field_schema.update(type="string")
 
+
 class URLModel(BaseModel):
-    id : PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     long_url: AnyUrl = Field(...)
     short_url: str = Field(...)
     hits: int = Field(...)
+
     class Config:
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
@@ -34,6 +37,7 @@ class URLModel(BaseModel):
                 "short_url": "http://example.com/abcdef",
             }
         }
+
 
 class User(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
@@ -54,11 +58,8 @@ class User(BaseModel):
                 "urls": [
                     {
                         "url": "https://example.com/abcdefghi/sjwjsjsjs/wjwjsjsj",
-                        "aliases": [
-                            "cdefgh",
-                            "ghefgh"
-                        ]
+                        "aliases": ["cdefgh", "ghefgh"],
                     }
-                ]
+                ],
             }
         }
