@@ -35,7 +35,7 @@ def home(request: Request, url: Optional[str] = Query(None)):
     if not url:
         url = ""
     elif "Invalid" not in url:
-        url = "Your shortened url is http://localhost:8000/" + url
+        url = "Your shortened url is https://dominuto.herokuapp.com/" + url
     return templates.TemplateResponse("index.html", {"request": request, "url": url})
 
 
@@ -138,7 +138,7 @@ def dashboard(
     if not url:
         url = ""
     elif "Invalid" not in url:
-        url = "Your shortened url is http://localhost:8000/" + url
+        url = "Your shortened url is https://dominuto.herokuapp.com/" + url
     return templates.TemplateResponse(
         "dashboard.html", {"request": request, "user": user, "url": url}
     )
@@ -155,9 +155,11 @@ def custom_url(
         error = ""
     if not url:
         url = ""
+    else:
+        url = "Your shortened url: https://dominuto.herokuapp.com/" + url
     return templates.TemplateResponse(
         "dashboard-custom.html",
-        {"request": request, "user": user, "url": "Your shortened url: http://localhost:8000/" + url, "error": error},
+        {"request": request, "user": user, "url": url, "error": error},
     )
 
 
@@ -172,7 +174,7 @@ async def custom(user: str = Query(...), url: str = Form(...), custom_url: str =
         )
     try:
         _ = requests.get(url)
-        new_data = jsonable_encoder(URLModel(long_url=url, short_url=custom_url))
+        new_data = jsonable_encoder(URLModel(long_url=url, short_url=custom_url, hits=0))
         await uri["Url"].insert_one(new_data)
         data = await uri["Users"].find_one(
             {"username": user, "urls": {"$elemMatch": {"url": url}}}
