@@ -1,6 +1,8 @@
 from typing import Optional
 import os
 import requests
+import socket
+import json
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -346,5 +348,19 @@ async def register_validation(
 @app.get("/{url}")
 async def redirect_url(url: str):
     url_data = await uri["Url"].find_one({"short_url": url})
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
+    url = f"https://freegeoip.app/json/{ip_address}"       # getting records from getting ip address
+    headers = {
+        'accept': "application/json",
+        'content-type': "application/json"
+        }
+    response = requests.request("GET", url, headers=headers)
+    country = json.loads(response.text)["country_name"]
+    data = await uri["Country"].find_one({"country": country})
+    if data:
+        await uri["Country"].update_one({"country": country}, {'$inc': {"hits": 1}})
+    else:
+        await uri["Country"].insert_one({"country": country, "hits": 1})
     await uri["Url"].update_one({"short_url": url}, {"$inc": {"hits": 1}})
     return RedirectResponse(url_data["long_url"])
