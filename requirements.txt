@@ -5,3 +5,4 @@ pydantic
 uvicorn
 requests
 pymongo[srv]
+jinja2
