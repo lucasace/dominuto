@@ -17,8 +17,8 @@ client = motor.motor_asyncio.AsyncIOMotorClient(os.environ["MONGODB_URL"])
 uri = client.Dominuto
 urls = uri.get_collection("Url")
 
-templates = Jinja2Templates(directory="./templates")
-app.mount("/static", StaticFiles(directory="./static"), name="static")
+templates = Jinja2Templates(directory="./app/templates")
+app.mount("/static", StaticFiles(directory="./app/static"), name="static")
 
 
 def hash_b62(b62_value: int):
