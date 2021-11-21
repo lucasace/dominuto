@@ -34,9 +34,11 @@ def hash_b62(b62_value: int):
 def home(request: Request, url: Optional[str] = Query(None)):
     if not url:
         url = ""
+        text=""
     elif "Invalid" not in url:
-        url = "Your shortened url is https://dominuto.herokuapp.com/" + url
-    return templates.TemplateResponse("index.html", {"request": request, "url": url})
+        url = "https://dominuto.herokuapp.com/" + url
+        text="Your shortened url is "
+    return templates.TemplateResponse("index.html", {"request": request, "text": text, "url": url})
 
 
 @app.post("/")
@@ -137,10 +139,14 @@ def dashboard(
 ):
     if not url:
         url = ""
+        text = ""
     elif "Invalid" not in url:
-        url = "Your shortened url is https://dominuto.herokuapp.com/" + url
+        url = "https://dominuto.herokuapp.com/" + url
+        text = "Your shoterned url is "
+    else:
+        text = ""
     return templates.TemplateResponse(
-        "dashboard.html", {"request": request, "user": user, "url": url}
+        "dashboard.html", {"request": request, "user": user, "text": text, "url": url}
     )
 
 @app.get("/manage_url")
@@ -172,10 +178,11 @@ def custom_url(
     if not url:
         url = ""
     else:
-        url = "Your shortened url: https://dominuto.herokuapp.com/" + url
+        url = "https://dominuto.herokuapp.com/" + url
+        text="Your shortened url: "
     return templates.TemplateResponse(
         "dashboard-custom.html",
-        {"request": request, "user": user, "url": url, "error": error},
+        {"request": request, "user": user, "url": url, 'text': text, "error": error},
     )
 
 
