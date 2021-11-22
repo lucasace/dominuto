@@ -68,7 +68,9 @@
                             </a>
                         </h1>
                         <div class="topnav">
-                          <a href="/admin_board?chart_type=location">GeoLocation Table</a>
+                          <a href="/admin_board?chart_type=location">GeoLocation Spread</a>
+                          <a href="/admin_board?chart_type=date_hit">Hits in the Week</a>
+                          <a href="/admin_board?chart_type=domain">Domain Distribution</a>
                           <a href="/">Logout</a>
                         </div>
                     </div>
@@ -119,22 +121,57 @@
 							</svg>
                         </a>
                     </div>
-                    <div class="footer-copyright">&copy; 2018 Laurel, all rights reserved</div>
                 </div>
             </div>
         </footer>
     </div>
     <script>
+    function getRandomColor() {
+      var letters = '0123456789ABCDEF';
+      var color = '#';
+      for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+    function hexToRgbA(hex){
+          var c;
+          if(/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)){
+              c= hex.substring(1).split('');
+              if(c.length== 3){
+                  c= [c[0], c[0], c[1], c[1], c[2], c[2]];
+              }
+              c= '0x'+c.join('');
+              return 'rgba('+[(c>>16)&255, (c>>8)&255, c&255].join(',')+',1)';
+          }
+          throw new Error('Bad Hex');
+      }
+
       var count = 15
       var data = []
       let labels=[]
+      let chart_type = "line"
+      let backgroundColor='rgba(255, 99, 132, 0.2)'
+      {%if type == "domain"%}
+        backgroundColor = []
+      {%endif%}
       {%for hit in hits if count!=0%}
-        count-=1;
-        data.push({{hit["hits"]}})
         {%if type == "hits"%}
+          count-=1;
           labels.push("https://dominuto.herokuapp.com/{{hit['short_url']}}")
+          data.push({{hit["hits"]}})
         {%  elif type=="location"%}
           labels.push("{{hit['city']}}")
+          data.push({{hit["hits"]}})
+        {% elif type=="date_hit"%}
+          labels.push("{{hit['Date']}}")
+          chart_type = "bar"
+          data.push({{hit["Hits"]}})
+        {%elif type=="domain"%}
+          labels.push("{{hit}}")
+          data.push({{hits[hit]}})
+          chart_type= "pie"
+          backgroundColor.push(hexToRgbA(getRandomColor()))
         {%endif%}
 
       {%endfor%}
@@ -142,7 +179,7 @@
       const myChart = new Chart(
         ctx,
         {
-          type: 'line',
+          type: chart_type,
           data: {
             labels: labels,
             datasets:[
@@ -151,6 +188,7 @@
                 data: data,
                 fill: false,
                 borderColor: 'rgb(100, 192, 192)',
+                backgroundColor: backgroundColor,
                 tension: 0.1
               }
             ]
@@ -162,9 +200,13 @@
                   display:false
                 } //this will remove all the x-axis grid lines
               }]
-            }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                  }
           }
-      }
+      }}
     )
     </script>
     <script src="{{ url_for('static', path='dist/js/main.min.js')}}"></script>

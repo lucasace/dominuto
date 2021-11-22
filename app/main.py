@@ -1,8 +1,8 @@
 from typing import Optional
 import os
 import requests
-import socket
 import json
+import datetime
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -12,7 +12,7 @@ import motor.motor_asyncio
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from app.models import URLModel, User
-
+import tldextract
 # pylint: disable=C0116, R1705, W0621
 
 app = FastAPI()
@@ -144,6 +144,20 @@ async def admin(request: Request, chart_type: str = Query(...)):
         hit_data = []
         async for document in uri["Location"].find({}):
             hit_data.append(document)
+    elif chart_type == "date_hit":
+        hit_data = []
+        async for document in uri["DateCount"].find({}):
+            hit_data.append(document)
+        hit_data = sorted(hit_data, key=lambda d: d['Date'])[:7]
+    elif chart_type == "domain":
+        hit_data = {}
+        async for document in uri["Url"].find({}):
+            domain = tldextract.extract(document["long_url"])
+            domain = '.'.join(domain[1:])
+            if domain not in hit_data:
+                hit_data[domain] = document["hits"]
+            else:
+                hit_data[domain] += document["hits"]
     return templates.TemplateResponse(
         "dashboard-admin.html", {"request": request, "hits": hit_data, "type": chart_type}
     )
@@ -367,4 +381,10 @@ async def redirect_url(url: str):
         else:
             await uri["Location"].insert_one({"city": city, "hits": 1})
         await uri["Url"].update_one({"short_url": url}, {"$inc": {"hits": 1}})
+        current_date = datetime.datetime.now()
+        data  = await uri["DateCount"].find_one({"Date": str(current_date.day)+"/"+str(current_date.month)+"/"+str(current_date.year)})
+        if data:
+            await uri["DateCount"].update_one({"Date": str(current_date.day)+"/"+str(current_date.month)+"/"+str(current_date.year)}, {"$inc": {"Hits": 1}})
+        else:
+            await uri["DateCount"].insert_one({"Date": str(current_date.day)+"/"+str(current_date.month)+"/"+str(current_date.year), "Hits": 1})
         return RedirectResponse(url_data["long_url"])
