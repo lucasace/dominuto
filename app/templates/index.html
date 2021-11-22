@@ -178,12 +178,12 @@
                             <p class="section-paragraph">The shortened url will be active only for 1 day after which it will expire. To save it for long, Kindly Login.</p>
                         </div>
                         <div class="footer-form newsletter-form field field-grouped">
-                          <form method="post">
+                          <form method="post" name="short">
                               <div class="control control-expanded">
-                                  <input class="input" size = "100" type="url" name="url" placeholder="Enter url to shorten">
+                                  <input onkeyup="checkform()" class="input" size = "100" type="url" name="url" placeholder="Enter url to shorten">
                               </div>
                               <div class="control">
-                                  <input type="submit" value="Get URL" class="button button-primary button-block button-shadow"/>
+                                  <input id="submitbutton" disabled="disabled" type="submit" value="Get URL" class="button button-primary button-block button-shadow"/>
                               </div>
                           </form>
                         </div>
@@ -226,6 +226,19 @@
             </div>
         </footer>
     </div>
+    <script>
+    function checkform()
+    {
+        var f = document.forms["short"].elements;
+        var cansubmit = true;
+
+        for (var i = 0; i < f.length; i++) {
+            if (f[i].value.length == 0) cansubmit = false;
+        }
+
+        document.getElementById('submitbutton').disabled = !cansubmit
+    }
+    </script>
     <script src="{{ url_for('static', path='dist/js/main.min.js')}}"></script>
 </body>
 </html>

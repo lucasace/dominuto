@@ -164,7 +164,7 @@
     <div class="background"></div>
     <div class="container">
         <h2>Register Form</h2>
-        <form action="/register" method="post">
+        <form name="short" action="/register" method="post">
             <p>{{error}}</p>
             <div class="form-item">
                 <span class="material-icons-outlined">
@@ -186,12 +186,13 @@
                 <input type="password" name="password" id="pass" placeholder="password">
             </div>
 
-            <button type="submit"> Register </button>
+            <button id="submitbutton" type="submit"> Register </button>
             <p>Already have a account? <a href="/login">Login Now!</a></p>
         </form>
 
     </div>
-
+    <script>
+    </script>
 </body>
 
 </html>
