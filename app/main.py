@@ -110,6 +110,11 @@ async def shortenUrl(
                         }
                     },
                 )
+            else:
+                await uri["Users"].update_one(
+                    {"username": user, "urls.url": url},
+                    {"$push": {"urls.$.aliases": custom_url}},
+                )
             return RedirectResponse(
                 "/dashboard?user="
                 + user
