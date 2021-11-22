@@ -373,12 +373,12 @@ async def register_validation(
 async def redirect_url(url: str):
     url_data = await uri["Url"].find_one({"short_url": url})
     if url_data:
-        url = f"https://ipinfo.io/json"       # getting records from getting ip address
+        url_l = f"https://ipinfo.io/json"       # getting records from getting ip address
         headers = {
             'accept': "application/json",
             'content-type': "application/json"
             }
-        response = requests.request("GET", url, headers=headers)
+        response = requests.request("GET", url_l, headers=headers)
         city = json.loads(response.text)["city"]
         data = await uri["Location"].find_one({"city": city})
         if data:
