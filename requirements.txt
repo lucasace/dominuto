@@ -8,5 +8,4 @@ pymongo[srv]
 jinja2
 python-multipart
 cryptography
-python-datetime
 tldextract
